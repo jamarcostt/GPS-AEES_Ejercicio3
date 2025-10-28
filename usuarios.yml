@@ -1,0 +1,417 @@
+openapi: 3.0.4
+info:
+  title: Microservicio de Usuarios
+  description: Gestión de identidad, perfiles, roles, métodos de pago, suscripciones, likes y reproducciones.
+  version: 1.0.0
+tags:
+  - name: users
+    description: Operaciones de usuarios, autenticación, perfiles, métodos de pago, suscripciones, likes y reproducciones.
+paths:
+  /users/auth/register:
+    post:
+      tags: [users]
+      summary: Registro de usuario
+      description: Registro de usuario en el microservicio de Usuarios & Autenticación.
+      operationId: registerUser
+      requestBody:
+        description: Datos necesarios para registrar un nuevo usuario
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, rol]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "usuario@correo.com"
+                password:
+                  type: string
+                  format: password
+                  example: "#ClaveSegura1234"
+                rol:
+                  type: string
+                  enum: [usuario, artista]
+                  example: artista
+      responses:
+        '201': { description: Created }
+        '400': { description: Bad Request }
+
+  /users/auth/login:
+    post:
+      tags: [users]
+      summary: Inicio de sesión
+      description: Inicio de sesión de usuario.
+      operationId: loginUser
+      requestBody:
+        description: Credenciales de usuario
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "usuario@correo.com"
+                password:
+                  type: string
+                  format: password
+                  example: "#ClaveSegura1234"
+      responses:
+        '200': { description: OK }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+
+  /users/auth/logout:
+    post:
+      tags: [users]
+      summary: Cierre de sesión
+      description: Cierre de sesión de usuario.
+      operationId: logoutUser
+      responses:
+        '200': { description: OK }
+        '400': { description: Bad Request }
+
+  /users/{idUser}:
+    get:
+      tags: [users]
+      summary: Consultar perfil de usuario
+      description: Obtiene el perfil del usuario por identificador.
+      operationId: getUserProfile
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/profile'
+        '404': { description: Not Found }
+    patch:
+      tags: [users]
+      summary: Modificar datos de usuario
+      description: Modifica los datos del usuario por identificador.
+      operationId: updateUser
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        description: Campos del perfil a modificar
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                  example: "Miguel Prieto"
+                avatar_url:
+                  type: string
+                  example: "https://avatar.iran.liara.run/public/40"
+                bio:
+                  type: string
+                  example: "Me encanta el Rock and Roll"
+      responses:
+        '200': { description: OK }
+        '400': { description: Bad Request }
+        '404': { description: Not Found }
+
+  /users/{idUser}/payment-methods:
+    get:
+      tags: [users]
+      summary: Obtener métodos de pago
+      description: Obtiene los métodos de pago del usuario.
+      operationId: listUserPaymentMethods
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/payment_method'
+        '404': { description: Not Found }
+    post:
+      tags: [users]
+      summary: Alta método de pago
+      description: Da de alta un método de pago para el usuario.
+      operationId: createPaymentMethod
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        description: Datos del nuevo método de pago
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, numC, cadC, cvv]
+              properties:
+                provider:
+                  type: string
+                  example: "VISA"
+                numC:
+                  type: string
+                  example: "4111111111111111"
+                cadC:
+                  type: string
+                  example: "12/28"
+                cvv:
+                  type: string
+                  example: "123"
+      responses:
+        '201': { description: Created }
+        '400': { description: Bad Request }
+        '404': { description: Not Found }
+
+  /users/{idUser}/payment-methods/{idPaymentMethod}:
+    delete:
+      tags: [users]
+      summary: Borrar método de pago
+      description: Elimina un método de pago del usuario.
+      operationId: deletePaymentMethod
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+        - name: idPaymentMethod
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: No Content }
+        '404': { description: Not Found }
+
+  /users/{idUser}/subscriptions:
+    post:
+      tags: [users]
+      summary: Añadir artista a suscripciones
+      description: Añade un artista a las suscripciones del usuario.
+      operationId: addSubscription
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        description: Identificador del artista a suscribir
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idArtist:
+                  type: string
+                  example: "art_12345"
+      responses:
+        '201': { description: Created }
+        '400': { description: Bad Request }
+        '404': { description: Not Found }
+    get:
+      tags: [users]
+      summary: Obtener suscripciones de usuario
+      description: Obtiene las suscripciones del usuario.
+      operationId: listUserSubscriptions
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/subscription'
+        '404': { description: Not Found }
+
+  /users/{idUser}/subscriptions/{idArtist}:
+    delete:
+      tags: [users]
+      summary: Borrar artista de suscripciones
+      description: Elimina un artista de las suscripciones del usuario.
+      operationId: deleteSubscription
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+        - name: idArtist
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: No Content }
+        '404': { description: Not Found }
+
+  /users/{idUser}/likes:
+    post:
+      tags: [users]
+      summary: Registrar like
+      description: Registra un like del usuario a una canción.
+      operationId: addLike
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        description: Identificador de la canción a la que se da like
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idTrack:
+                  type: string
+                  example: "trk_56789"
+      responses:
+        '201': { description: Created }
+        '400': { description: Bad Request }
+        '404': { description: Not Found }
+
+  /users/{idUser}/likes/{idLike}:
+    delete:
+      tags: [users]
+      summary: Eliminar like
+      description: Elimina un like del usuario.
+      operationId: deleteLike
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+        - name: idLike
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: No Content }
+        '404': { description: Not Found }
+
+  /users/{idUser}/play:
+    post:
+      tags: [users]
+      summary: Registrar reproducción
+      description: Registra la reproducción de una canción por el usuario.
+      operationId: registerPlay
+      parameters:
+        - name: idUser
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        description: Identificador de la canción reproducida
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idTrack:
+                  type: string
+                  example: "trk_12345"
+      responses:
+        '201': { description: Created }
+        '400': { description: Bad Request }
+        '404': { description: Not Found }
+        
+components:
+  schemas:
+    user:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "usr_001"
+        email:
+          type: string
+          example: "usuario@correo.com"
+        password:
+          type: string
+          example: "#ClaveSegura1234"
+        rol:
+          type: string
+          enum: [usuario, artista]
+          example: "usuario"
+        created_at:
+          type: string
+          example: "2025-10-16T12:00:00Z"
+    profile:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "usr_001"
+        display_name:
+          type: string
+          example: "Miguel Prieto"
+        avatar_url:
+          type: string
+          example: "https://avatar.iran.liara.run/public/40"
+        bio:
+          type: string
+          example: "Apasionado del Rock and Roll"
+    payment_method:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pay_001"
+        user_id:
+          type: string
+          example: "usr_001"
+        provider:
+          type: string
+          example: "VISA"
+        numC:
+          type: string
+          example: "4111111111111111"
+        cadC:
+          type: string
+          example: "12/28"
+        cvv:
+          type: string
+          example: "123"
+        created_at:
+          type: string
+          example: "2025-10-16T18:00:00Z"
+    subscription:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "usr_001"
+        artist_id:
+          type: string
+          example: "art_001"
+        created_at:
+          type: string
+          example: "2025-10-16T19:00:00Z"
+        
